@@ -1,0 +1,69 @@
+/* 诗词显示区域 */
+.poem-display {
+    background: linear-gradient(135deg, #fdfcfb 0%, #e2d1c3 100%);
+    border: 1px solid #d4c5b2;
+    border-radius: 12px;
+    padding: 32px 24px;
+    text-align: center;
+    font-family: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+    font-size: 1.5rem;
+    line-height: 2.2;
+    color: #3d2b1f;
+    min-height: 120px;
+    animation: fadeIn 0.6s ease-in;
+}
+
+.poem-display .line {
+    display: block;
+}
+
+/* 上传区域 */
+.upload-area {
+    cursor: pointer;
+    transition: border-color 0.3s, background-color 0.3s;
+    border: 2px dashed #ccc !important;
+}
+
+.upload-area:hover {
+    border-color: #0d6efd !important;
+    background-color: #f0f7ff;
+}
+
+.upload-area.dragover {
+    border-color: #0d6efd !important;
+    background-color: #e8f4ff;
+}
+
+/* 结果卡片 */
+#result-card {
+    animation: slideUp 0.4s ease-out;
+}
+
+/* 动画 */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 页脚 */
+.footer {
+    position: relative;
+    bottom: 0;
+    width: 100%;
+}
+
+/* 韵律星级 */
+.rhyme-stars { color: #f0ad4e; }
+
+/* 响应式字体 */
+@media (max-width: 576px) {
+    .poem-display {
+        font-size: 1.2rem;
+        padding: 20px 16px;
+    }
+}

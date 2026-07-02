@@ -1,0 +1,29 @@
+# Web Framework
+flask==3.0.0
+flask-cors==4.0.0
+
+# Deep Learning
+torch==2.1.0
+torchvision==0.16.0
+transformers==4.36.0
+
+# NLP / Chinese Text
+jieba==0.42.1
+snownlp==0.12.3
+pypinyin==0.49.0
+
+# Image Processing
+Pillow==10.1.0
+opencv-python==4.8.1.78
+
+# Data Processing
+numpy==1.26.0
+pandas==2.1.4
+
+# Serving
+waitress==2.1.2
+
+# Optional
+peft==0.7.0
+datasets==2.15.0
+sacrebleu==2.4.0

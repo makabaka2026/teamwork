@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}诗词自动生成系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- 标题 -->
+        <div class="text-center mb-4">
+            <h1 class="display-5 fw-bold">📜 诗词自动生成系统</h1>
+            <p class="text-muted">基于深度学习的唐诗宋词自动生成</p>
+        </div>
+
+        <!-- Tab 切换 -->
+        <ul class="nav nav-tabs mb-4" id="modeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="keyword-tab" data-bs-toggle="tab" data-bs-target="#keyword-panel" type="button">
+                    🔑 关键字生成
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="scene-tab" data-bs-toggle="tab" data-bs-target="#scene-panel" type="button">
+                    📝 场景生成
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="image-tab" data-bs-toggle="tab" data-bs-target="#image-panel" type="button">
+                    🖼️ 图片生成
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab 内容 -->
+        <div class="tab-content" id="modeTabsContent">
+            <!-- F1: 关键字生成 -->
+            <div class="tab-pane fade show active" id="keyword-panel">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">请输入关键字</label>
+                            <input type="text" class="form-control" id="keyword-input" placeholder="例如：春、月、花、山、水…" maxlength="10">
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">行数</label>
+                                <select class="form-select" id="keyword-lines">
+                                    <option value="4">四句</option>
+                                    <option value="8">八句</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">风格</label>
+                                <select class="form-select" id="keyword-style">
+                                    <option value="tang">唐诗</option>
+                                    <option value="song">宋词</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">创造力</label>
+                                <input type="range" class="form-range" id="keyword-temp" min="0.1" max="1.5" step="0.1" value="0.8">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="generateKeyword()">
+                            🚀 生成诗词
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- F2: 场景生成 -->
+            <div class="tab-pane fade" id="scene-panel">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">请描述一个场景</label>
+                            <textarea class="form-control" id="scene-input" rows="3" placeholder="例如：春天江边柳树摇曳，心情愉快…"></textarea>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label">行数</label>
+                                <select class="form-select" id="scene-lines">
+                                    <option value="4">四句</option>
+                                    <option value="8">八句</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">创造力</label>
+                                <input type="range" class="form-range" id="scene-temp" min="0.1" max="1.5" step="0.1" value="0.8">
+                            </div>
+                            <div class="col-md-6">
+                                <div id="analysis-preview" class="small text-muted mt-4"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="generateScene()">
+                            🚀 生成诗词
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- F3: 图片生成 -->
+            <div class="tab-pane fade" id="image-panel">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">上传图片</label>
+                            <div class="upload-area border rounded p-4 text-center" id="upload-area">
+                                <div id="upload-placeholder">
+                                    <p class="text-muted mb-1">📁 拖拽图片到此处或点击上传</p>
+                                    <small class="text-muted">支持 jpg / png / gif / webp，最大 10MB</small>
+                                </div>
+                                <img id="image-preview" class="img-fluid rounded d-none" style="max-height: 200px;">
+                                <input type="file" id="image-file" class="d-none" accept="image/*">
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">行数</label>
+                                <select class="form-select" id="image-lines">
+                                    <option value="4">四句</option>
+                                    <option value="8">八句</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">创造力</label>
+                                <input type="range" class="form-range" id="image-temp" min="0.1" max="1.5" step="0.1" value="0.8">
+                            </div>
+                            <div class="col-md-4">
+                                <div id="labels-preview" class="small text-muted mt-4"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary w-100" onclick="generateImage()">
+                            🚀 生成诗词
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果区域 -->
+        <div class="card mt-4" id="result-card" style="display: none;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">📖 生成结果</h5>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="copyPoem()">📋 复制</button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="regenerate()">🔄 重新生成</button>
+                    </div>
+                </div>
+                <div id="poem-display" class="poem-display"></div>
+                <div class="mt-3 d-flex justify-content-between text-muted small">
+                    <span id="rhyme-info"></span>
+                    <span id="time-info"></span>
+                </div>
+                <div id="extra-info" class="mt-2 small text-muted"></div>
+            </div>
+        </div>
+
+        <!-- 错误提示 -->
+        <div class="alert alert-danger mt-3" id="error-alert" style="display: none;"></div>
+
+        <!-- 加载动画 -->
+        <div class="text-center mt-3" id="loading-spinner" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">生成中...</span>
+            </div>
+            <p class="mt-2 text-muted">正在生成诗词，请稍候...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
