@@ -1,29 +1,52 @@
-# Web Framework
-flask==3.0.0
-flask-cors==4.0.0
-
-# Deep Learning
-torch==2.1.0
-torchvision==0.16.0
-transformers==4.36.0
-
-# NLP / Chinese Text
+# ============================================================
+# 诗词自动生成系统 - 完整依赖（所有人装这个就能跑全栈）
+# 安装: pip install -r requirements.txt
+# ============================================================
+accelerate==1.14.0
+aiohttp==3.14.1
+blinker==1.9.0
+certifi==2026.6.17
+charset-normalizer==3.4.7
+click==8.4.2
+colorama==0.4.6
+datasets==5.0.0
+dill==0.4.1
+filelock==3.29.4
+flask==3.1.3
+flask-cors==6.0.5
+fsspec==2026.4.0
+huggingface_hub==1.21.0
+idna==3.18
+itsdangerous==2.2.0
 jieba==0.42.1
+jinja2==3.1.6
+markupsafe==3.0.3
+mpmath==1.3.0
+networkx==3.6.1
+numpy==2.5.0
+opencv-python==5.0.0.93
+packaging==26.2
+pandas==3.0.3
+peft==0.19.1
+pillow==12.3.0
+psutil==7.2.2
+pyarrow==24.0.0
+pypinyin==0.55.0
+python-dateutil==2.9.0.post0
+pyyaml==6.0.3
+regex==2026.6.28
+requests==2.34.2
+sacrebleu==2.6.0
+safetensors==0.8.0
 snownlp==0.12.3
-pypinyin==0.49.0
-
-# Image Processing
-Pillow==10.1.0
-opencv-python==4.8.1.78
-
-# Data Processing
-numpy==1.26.0
-pandas==2.1.4
-
-# Serving
-waitress==2.1.2
-
-# Optional
-peft==0.7.0
-datasets==2.15.0
-sacrebleu==2.4.0
+sympy==1.14.0
+tokenizers==0.22.2
+torch==2.12.1+cpu
+torchvision==0.27.1+cpu
+tqdm==4.68.3
+transformers==5.12.1
+typing_extensions==4.16.0
+tzdata==2026.2
+urllib3==2.7.0
+waitress==3.0.2
+werkzeug==3.1.8

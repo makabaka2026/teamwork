@@ -1,5 +1,9 @@
 """诗词生成核心 — GPT-2 / LSTM"""
+import json
+import random
+import pickle
 import torch
+from pathlib import Path
 from backend.config import Config
 
 
@@ -10,9 +14,22 @@ class PoetryGenerator:
         self.model_type = "none"
         self.gpu_available = torch.cuda.is_available()
         self.device = torch.device("cuda" if self.gpu_available else "cpu")
+        self._fallback = None
+        self._lstm_trained = False
+
+    @property
+    def fallback(self) -> dict:
+        """懒加载回退诗库"""
+        if self._fallback is None:
+            fallback_path = Config.CHECKPOINT_DIR / "fallback_poems.json"
+            if fallback_path.exists():
+                with open(fallback_path, encoding="utf-8") as f:
+                    self._fallback = json.load(f)
+            else:
+                self._fallback = {}
+        return self._fallback
 
     def load_model(self, model_type: str = "gpt2"):
-        """加载模型，优先 GPT-2，失败则回退 LSTM"""
         if model_type == "gpt2":
             try:
                 self._load_gpt2()
@@ -28,7 +45,6 @@ class PoetryGenerator:
             raise ValueError(f"未知模型类型: {model_type}")
 
     def _load_gpt2(self):
-        """加载 GPT2-Chinese-Poem 模型"""
         from transformers import GPT2LMHeadModel, BertTokenizer
 
         model_name = "uer/gpt2-chinese-poem"
@@ -41,18 +57,32 @@ class PoetryGenerator:
         print(f"[INFO] GPT-2 加载完成 (device={self.device})")
 
     def _load_lstm(self):
-        """加载或初始化 LSTM 模型"""
         from backend.services.lstm_model import PoemLSTM
 
         print("[INFO] 初始化 LSTM 模型 ...")
+
+        # 尝试加载词汇表
+        vocab_path = Config.CHECKPOINT_DIR / "vocab.pkl"
+        word2ix, ix2word = {}, {}
+        if vocab_path.exists():
+            with open(vocab_path, "rb") as f:
+                vocab = pickle.load(f)
+            word2ix = vocab.get("word2ix", {})
+            ix2word = vocab.get("ix2word", {})
+
+        vocab_size = len(word2ix) if word2ix else 8000
         self.model = PoemLSTM(
-            vocab_size=8000,
+            vocab_size=vocab_size,
             embedding_dim=256,
             hidden_dim=512,
             num_layers=3,
         )
         self.model.to(self.device)
         self.model.eval()
+
+        # 注入词汇表
+        self.model.word2ix = word2ix
+        self.model.ix2word = ix2word
 
         # 尝试加载预训练权重
         ckpt_path = Config.LSTM_MODEL_PATH
@@ -61,31 +91,32 @@ class PoetryGenerator:
             self.model.load_state_dict(
                 torch.load(ckpt_path, map_location=self.device, weights_only=True)
             )
+            self._lstm_trained = True
         else:
-            print("[WARN] 未找到 LSTM 权重，使用随机初始化（请先训练）")
+            print("[WARN] 未找到 LSTM 权重，使用回退诗库")
+            self._lstm_trained = False
 
-        self.tokenizer = None  # LSTM 使用 char-level vocab
-        print(f"[INFO] LSTM 加载完成 (device={self.device})")
+        self.tokenizer = None
+        print(f"[INFO] LSTM 加载完成 (device={self.device}, vocab={vocab_size})")
 
     def switch_model(self, model_type: str):
-        """运行时切换模型"""
         if self.model_type != model_type:
             self.load_model(model_type)
 
-    def generate(
-        self, prompt: str, num_lines: int = 4, temperature: float = 0.8
-    ) -> str:
-        """生成诗词文本"""
+    def generate(self, prompt: str, num_lines: int = 4, temperature: float = 0.8) -> str:
         if self.model is None:
             raise RuntimeError("模型未加载，请先调用 load_model()")
 
         if self.model_type == "gpt2":
             return self._generate_gpt2(prompt, num_lines, temperature)
         else:
-            return self._generate_lstm(prompt, num_lines, temperature)
+            result = self._generate_lstm(prompt, num_lines, temperature)
+            if result is None:
+                return self._fallback_generate(prompt, num_lines)
+            return result
 
     def _generate_gpt2(self, prompt: str, num_lines: int, temperature: float) -> str:
-        max_len_per_line = 10  # 每句约 5-7 字 + 标点
+        max_len_per_line = 10
         max_length = len(prompt) + num_lines * max_len_per_line
 
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
@@ -104,29 +135,50 @@ class PoetryGenerator:
             )
 
         generated = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        # 去掉 prompt 部分
         if generated.startswith(prompt):
             generated = generated[len(prompt):]
         return generated.strip()
 
-    def _generate_lstm(self, prompt: str, num_lines: int, temperature: float) -> str:
-        # LSTM 热启动模式：用 prompt 中的关键字作为起始字符
-        # 这里使用简化实现
-        if not hasattr(self.model, "word2ix") or not hasattr(self.model, "ix2word"):
-            return _FALLBACK_POEMS.get(prompt[:2], "春眠不觉晓，\n处处闻啼鸟。\n夜来风雨声，\n花落知多少。")
-        return self.model.generate(
-            start_text=prompt,
-            max_chars=num_lines * 10,
-            temperature=temperature,
-            device=self.device,
-        )
+    def _generate_lstm(self, prompt: str, num_lines: int, temperature: float) -> str | None:
+        if not self._lstm_trained:
+            return None
+        if not hasattr(self.model, "word2ix") or not self.model.ix2word:
+            return None
+        if not self.model.word2ix:
+            return None
+        try:
+            return self.model.generate(
+                start_text=prompt,
+                max_chars=num_lines * 10,
+                temperature=temperature,
+                device=self.device,
+            )
+        except Exception:
+            return None
 
+    def _fallback_generate(self, prompt: str, num_lines: int) -> str:
+        """从回退诗库中按关键词匹配诗词"""
+        if not self.fallback:
+            return "春眠不觉晓，\n处处闻啼鸟。\n夜来风雨声，\n花落知多少。"
 
-# 回退诗词库（模型未就绪时使用）
-_FALLBACK_POEMS = {
-    "春": "春风得意马蹄疾，\n一日看尽长安花。\n等闲识得东风面，\n万紫千红总是春。",
-    "月": "床前明月光，\n疑是地上霜。\n举头望明月，\n低头思故乡。",
-    "花": "花开堪折直须折，\n莫待无花空折枝。\n落红不是无情物，\n化作春泥更护花。",
-    "山": "会当凌绝顶，\n一览众山小。\n横看成岭侧成峰，\n远近高低各不同。",
-    "水": "飞流直下三千尺，\n疑是银河落九天。\n问渠那得清如许，\n为有源头活水来。",
-}
+        # 在 prompt 中查找匹配的关键词
+        candidates = []
+        for kw, poems in self.fallback.items():
+            if kw in prompt:
+                candidates.extend(poems)
+
+        if not candidates:
+            # 随机返回一首
+            all_poems = []
+            for poems in self.fallback.values():
+                all_poems.extend(poems)
+            if all_poems:
+                candidates = all_poems
+
+        if not candidates:
+            return "春眠不觉晓，\n处处闻啼鸟。\n夜来风雨声，\n花落知多少。"
+
+        # 随机选一首，截取所需行数
+        chosen = random.choice(candidates)
+        lines = chosen[:num_lines]
+        return "\n".join(lines)

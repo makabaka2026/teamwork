@@ -9,17 +9,15 @@ import numpy as np
 
 
 def load_tang_poems(data_dir: Path) -> list[list[str]]:
-    """从 chinese-poetry 仓库加载唐诗"""
+    """从御定全唐诗 JSON 文件加载唐诗"""
     poems = []
     tang_dir = data_dir / "tang"
 
     if not tang_dir.exists():
         print(f"[WARN] 唐诗数据目录不存在: {tang_dir}")
-        print("  请从 https://github.com/chinese-poetry/chinese-poetry 下载")
-        print("  将 json/tang/ 目录放入 training/data/raw/tang/")
         return poems
 
-    for json_file in tang_dir.glob("poet.tang.*.json"):
+    for json_file in sorted(tang_dir.glob("*.json")):
         with open(json_file, "r", encoding="utf-8") as f:
             data = json.load(f)
             for item in data:

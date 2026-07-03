@@ -28,7 +28,8 @@ def _get_generator() -> PoetryGenerator:
     global _generator
     if _generator is None:
         _generator = PoetryGenerator()
-        _generator.load_model()
+        # 默认用 LSTM（无权重时立即走回退诗库，无需等待模型下载）
+        _generator.load_model("lstm")
     return _generator
 
 
