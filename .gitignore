@@ -217,16 +217,14 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Training data (large JSON files)
-training/data/raw/
+# Project: models, data, checkpoints
+*.safetensors
+*.zip
+*.npz
+*.pkl
+*.pth
 training/data/processed/
-
-# Model checkpoints (large binary files)
-backend/checkpoints/gpt2-poem/
-backend/checkpoints/lstm/*.pth
-backend/checkpoints/clip/
-
-# Sample/test output files
-sample.json
-sample_verify.txt
-test_result.txt
+training/data/raw/
+training/chinese-poetry-master/
+backend/checkpoints/
+training/output/
