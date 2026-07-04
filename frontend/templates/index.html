@@ -28,6 +28,16 @@
                     🖼️ 图片生成
                 </button>
             </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="history-tab" data-bs-toggle="tab" data-bs-target="#history-panel" type="button" onclick="loadHistoryIfNeeded()">
+                    📋 生成历史
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="browse-tab" data-bs-toggle="tab" data-bs-target="#browse-panel" type="button" onclick="loadBrowseIfNeeded()">
+                    📖 诗词浏览
+                </button>
+            </li>
         </ul>
 
         <!-- Tab 内容 -->
@@ -132,6 +142,76 @@
                         <button class="btn btn-primary w-100" onclick="generateImage()">
                             🚀 生成诗词
                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 4: 生成历史（列表视图） -->
+            <div class="tab-pane fade" id="history-panel">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">📋 生成历史</h5>
+                            <select class="form-select form-select-sm w-auto" id="history-filter" onchange="applyHistoryFilter()">
+                                <option value="all">全部</option>
+                                <option value="keyword">🔑 关键字</option>
+                                <option value="scene">📝 场景</option>
+                                <option value="image">🖼️ 图片</option>
+                            </select>
+                        </div>
+                        <div id="history-list"></div>
+                        <div id="history-empty" class="text-center text-muted py-5" style="display:none;">
+                            <p class="fs-4">📭</p>
+                            <p>暂无生成记录，快去生成一首吧～</p>
+                        </div>
+                        <div class="text-center mt-3" id="history-load-more" style="display:none;">
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadMoreHistory()">加载更多</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 5: 诗词浏览（卡片画廊） -->
+            <div class="tab-pane fade" id="browse-panel">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">📖 诗词浏览</h5>
+                            <select class="form-select form-select-sm w-auto" id="browse-filter" onchange="applyBrowseFilter()">
+                                <option value="all">全部</option>
+                                <option value="keyword">🔑 关键字</option>
+                                <option value="scene">📝 场景</option>
+                                <option value="image">🖼️ 图片</option>
+                            </select>
+                        </div>
+                        <div class="row g-3" id="browse-cards"></div>
+                        <div id="browse-empty" class="text-center text-muted py-5" style="display:none;">
+                            <p class="fs-4">📭</p>
+                            <p>暂无生成记录，快去生成一首吧～</p>
+                        </div>
+                        <div class="text-center mt-3" id="browse-load-more" style="display:none;">
+                            <button class="btn btn-outline-primary btn-sm" onclick="loadMoreBrowse()">加载更多</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 诗词详情模态框 -->
+        <div class="modal fade" id="poem-modal" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="poem-modal-title"></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="poem-display mb-3" id="poem-modal-body"></div>
+                        <div class="small text-muted" id="poem-modal-meta"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-outline-secondary btn-sm" onclick="copyModalPoem()">📋 复制</button>
+                        <button class="btn btn-secondary btn-sm" data-bs-dismiss="modal">关闭</button>
                     </div>
                 </div>
             </div>

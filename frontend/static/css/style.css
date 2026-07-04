@@ -60,10 +60,60 @@
 /* 韵律星级 */
 .rhyme-stars { color: #f0ad4e; }
 
-/* 响应式字体 */
+/* 历史列表项 */
+.history-item {
+    transition: background-color 0.2s;
+}
+
+.history-item:hover {
+    background-color: #f8f9fa;
+}
+
+.history-preview {
+    font-family: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+    font-size: 1.05rem;
+    color: #5a4a3a;
+    line-height: 1.8;
+}
+
+/* 诗词卡片 */
+.poem-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+    border: 1px solid #e0d5c7;
+}
+
+.poem-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.poem-card-text {
+    font-family: "STKaiti", "KaiTi", "楷体", "Noto Serif SC", serif;
+    font-size: 1.1rem;
+    color: #3d2b1f;
+    white-space: pre-line;
+    line-height: 2;
+}
+
+/* 模态框诗词展示 */
+#poem-modal-body.poem-display {
+    font-size: 1.3rem;
+    padding: 24px 16px;
+    margin: 0;
+}
+
+/* 响应式：小屏卡片字体缩小 */
 @media (max-width: 576px) {
     .poem-display {
         font-size: 1.2rem;
         padding: 20px 16px;
+    }
+
+    .poem-card-text {
+        font-size: 0.95rem;
+    }
+
+    .history-preview {
+        font-size: 0.9rem;
     }
 }
