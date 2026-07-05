@@ -53,17 +53,25 @@ def to_simplified(text):
 
 
 def clean_poem_text(poem):
-    """清洗诗句文本: 去掉残缺补字符号、缺字占位符、注释"""
+    """清洗诗句文本: 去掉残缺补字符号、缺字占位符、所有注释"""
     cleaned = []
     for line in poem["paragraphs"]:
-        line = re.sub(r"\[([^\]]*)\]", r"\1", line)       # [X] 补字括号
-        line = line.replace("□", "")                        # 缺字占位符
-        line = re.sub(r"[（(]一[作云].*?[）)]", "", line)   # 古籍异文注释
-        # 古籍引用注释: （见《XX》卷X） / （《XX》XX）
-        line = re.sub(r"[（(]见《[^》]+》[^）)]*[）)]", "", line)
-        line = re.sub(r"[（(]《[^》]+》[^）)]*[）)]", "", line)
-        # 去掉全角/半角括号及其中内容 (最后兜底)
+        # [X] 补字括号 → 保留文字
+        line = re.sub(r"\[([^\]]*)\]", r"\1", line)
+        line = line.replace("□", "")
+
+        # 全角括号 — 只要括号内包含这些关键词，整段括号+内容全删
+        citation_kw = r"卷|收|见|全唐|永乐|诗|录|集|典|部|注|按|一作|一本|或作"
+        line = re.sub(r"[（(][^）)]*(?:" + citation_kw + r")[^）)]*[）)]", "", line)
+
+        # 半角括号
+        line = re.sub(r"\([^)]*(?:" + citation_kw + r")[^)]*\)", "", line)
+
+        # 兜底: 移除所有残留全角/半角括号内容
         line = re.sub(r"[（(][^）)]*[）)]", "", line)
+        line = re.sub(r"\([^)]*\)", "", line)
+
+        # 去掉只有标点符号的行
         chars = re.findall(r"[一-鿿]", line)
         if len(chars) >= 3:
             cleaned.append(line)
@@ -103,35 +111,29 @@ def extract_keywords(poem):
 
 def generate_scene_description(poem):
     """
-    为每首诗生成场景描述 — 比关键词更丰富的语义输入。
-    例如: "登高望远，天地辽阔，秋风萧瑟，孤雁南飞"
+    生成任务式场景描述 — 明确是"创作指令"而非诗的开头。
+    输出如: "写一首五言诗，描写离别时的愁绪和不舍"
     """
     title = poem.get("title", "").strip()
     clean_title = re.sub(r"[（(].*?[）)]", "", title).strip()
     kws = poem.get("keywords", [])[:4]
     fmt = poem.get("format", "")
+    fmt_name = "五言诗" if "wuyan" in fmt else ("七言诗" if "qiyan" in fmt else ("词" if "songci" in fmt else "诗"))
 
-    # 1. 优先使用预定义模板
+    # 1. 使用预定义模板 + 格式
     for tpl_key, tpl_desc in SCENE_TEMPLATES.items():
         if tpl_key in clean_title:
-            # 补充意象词
-            extra = "，".join(kws[:3]) if kws else ""
-            if extra:
-                return f"{tpl_desc}，{extra}"
-            return tpl_desc
+            return f"写一首{fmt_name}，{tpl_desc}。"
 
-    # 2. 用诗题+意象构建
+    # 2. 诗题描述
     if clean_title and clean_title not in BAD_TITLES and len(clean_title) >= 2:
-        parts = [f"描写{clean_title}"]
-        if kws:
-            parts.append("意象：" + "、".join(kws[:3]))
-        return "，".join(parts) + "。"
+        return f"写一首{fmt_name}，主题是{clean_title}。"
 
-    # 3. 纯意象描述
+    # 3. 意象描述
     if kws:
-        return "一首诗，意境：" + "、".join(kws[:4]) + "。"
+        return f"写一首{fmt_name}，意象：{'、'.join(kws[:4])}。"
 
-    return "古诗一首"
+    return f"写一首{fmt_name}。"
 
 
 def classify_tang_format(poem):
@@ -143,9 +145,13 @@ def classify_tang_format(poem):
     cnt_5 = sum(1 for h in lengths if 4.5 <= h <= 5.5)
     cnt_7 = sum(1 for h in lengths if 6.5 <= h <= 7.5)
     total = len(lengths)
-    if cnt_5 / total >= 0.8: return "wuyan"
-    if cnt_7 / total >= 0.8: return "qiyan"
-    return "gutishi"
+    if cnt_5 / total >= 0.95: return "wuyan"
+    if cnt_7 / total >= 0.95: return "qiyan"
+    # 严格: 所有行必须统一长度
+    if cnt_5 + cnt_7 < total:
+        return "gutishi"
+    if cnt_5 > cnt_7: return "wuyan"
+    return "qiyan"
 
 
 def load_poems(data_dir, folder, file_pattern, poem_type):
@@ -240,18 +246,19 @@ def main():
                 fmt = poem.get("format", "")
                 tag = ""  # 五言/七言分开训练, 不需要格式标签
 
-                # === 模式1: 场景描述 → 全诗 ===
+                # === 模式1: 场景描述 → 全诗 (指令格式) ===
                 scene = generate_scene_description(poem)
-                f.write(json.dumps({"input": scene, "output": poem_text},
+                # 指令格式: "写诗：xxx" — 教会模型输入≠诗句
+                f.write(json.dumps({"input": f"写诗：{scene}", "output": poem_text},
                                    ensure_ascii=False) + "\n")
                 pairs += 1
 
-                # === 模式2: 关键词 → 全诗 ===
+                # === 模式2: 标题 → 全诗 (指令格式) ===
                 title = poem.get("title", "").strip()
                 clean_title = re.sub(r"[（(].*?[）)]", "", title).strip()
                 if clean_title and clean_title not in BAD_TITLES and len(clean_title) >= 2:
-                    f.write(json.dumps({"input": clean_title, "output": poem_text},
-                                       ensure_ascii=False) + "\n")
+                    f.write(json.dumps({"input": f"写诗：{clean_title}",
+                                        "output": poem_text}, ensure_ascii=False) + "\n")
                     pairs += 1
 
                 # === 模式3: 首联 → 全诗 ===
@@ -259,8 +266,8 @@ def main():
                 segments = [s for s in segments if len(re.findall(r"[一-鿿]", s)) >= 3]
                 if len(segments) >= 2:
                     couplet = segments[0] + "，" + segments[1] + "。"
-                    f.write(json.dumps({"input": couplet, "output": poem_text},
-                                       ensure_ascii=False) + "\n")
+                    f.write(json.dumps({"input": f"续诗：{couplet}",
+                                        "output": poem_text}, ensure_ascii=False) + "\n")
                     pairs += 1
 
         print(f"  {out_name}: {pairs} 对 ({len(poems)}首, 跳过短诗:{skipped_short})")

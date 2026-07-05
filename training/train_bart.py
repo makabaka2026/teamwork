@@ -75,10 +75,8 @@ def train(args):
         save_steps=500,
         save_total_limit=2,
         fp16=torch.cuda.is_available(),
-        predict_with_generate=True,
-        generation_max_length=128,
-        eval_strategy="steps",
-        eval_steps=500,
+        predict_with_generate=False,
+        eval_strategy="no",
         dataloader_num_workers=0,
     )
 
