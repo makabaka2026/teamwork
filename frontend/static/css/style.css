@@ -1,0 +1,925 @@
+/* ============================================================
+   诗词生成系统 — 浓墨重彩古典中国风样式表
+   ============================================================ */
+
+/* ── Google Fonts 由 base.html 的 <link> 引入 ── */
+
+/* ── CSS 自定义属性 ────────────────────────────────────── */
+:root {
+    --ink-black: #2C2416;
+    --ink-gray: #8B8178;
+    --ink-light: #C5BDB5;
+    --vermilion: #C43D3D;
+    --vermilion-dark: #9B2020;
+    --vermilion-light: #E8A0A0;
+    --gold: #C9A96E;
+    --gold-light: #E0D0A8;
+    --paper: #F5EFE0;
+    --paper-dark: #E8DFC8;
+    --scroll: #FBF7ED;
+    --scroll-dark: #EDE5D3;
+    --jade: #7B9A8B;
+    --jade-light: #A8C9B8;
+    --shadow-sm: 0 2px 8px rgba(44, 36, 22, 0.08);
+    --shadow-md: 0 4px 16px rgba(44, 36, 22, 0.12);
+    --shadow-lg: 0 8px 32px rgba(44, 36, 22, 0.18);
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+    --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── 全局重置 ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: var(--ink-black);
+    background-color: var(--paper);
+    /* 宣纸纤维纹理：多层径向渐变叠加 */
+    background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(200, 180, 150, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(180, 160, 130, 0.1) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 80%, rgba(210, 190, 160, 0.12) 0%, transparent 45%),
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(180, 160, 130, 0.03) 2px,
+            rgba(180, 160, 130, 0.03) 4px
+        );
+    background-attachment: fixed;
+    min-height: 100vh;
+    overflow-x: hidden;
+    animation: pageFadeIn 0.5s ease-out;
+}
+
+/* ── 背景装饰层 ────────────────────────────────────────── */
+.bg-decorations {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.bg-mountains {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 35vh;
+    transition: transform 0.1s ease-out;
+}
+
+.bg-clouds {
+    position: absolute;
+    bottom: 10%;
+    right: 0;
+    width: 40%;
+    height: auto;
+    opacity: 0.6;
+    transition: transform 0.15s ease-out;
+}
+
+/* ── 主内容层级 ────────────────────────────────────────── */
+main, .site-header, .site-footer {
+    position: relative;
+    z-index: 1;
+}
+
+/* ── 顶部导航 ──────────────────────────────────────────── */
+.site-header {
+    background: linear-gradient(180deg,
+        rgba(245, 239, 224, 0.98) 0%,
+        rgba(245, 239, 224, 0.9) 100%);
+    border-bottom: 1px solid var(--scroll-dark);
+    padding: 12px 0;
+    backdrop-filter: blur(8px);
+}
+
+.site-header .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: var(--ink-black);
+}
+
+.header-brand:hover { color: var(--vermilion); }
+
+/* 小印章 */
+.seal-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: var(--vermilion);
+    color: #fff;
+    font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
+    font-size: 1.4rem;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(196, 61, 61, 0.35);
+    flex-shrink: 0;
+}
+
+.brand-text {
+    font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.header-link {
+    color: var(--ink-gray);
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: color var(--transition);
+}
+
+.header-link:hover { color: var(--ink-black); }
+
+/* ── 页脚 ──────────────────────────────────────────────── */
+.site-footer {
+    padding: 24px 0;
+    color: var(--ink-gray);
+    font-family: "Noto Serif SC", serif;
+    border-top: 1px solid var(--scroll-dark);
+    margin-top: 48px;
+}
+
+/* ── 标题印章 & Tab 导航 ── */
+
+/* ── 标题印章区 ────────────────────────────────────────── */
+.title-area {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.title-seal {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 90px;
+    height: 90px;
+    background: var(--vermilion);
+    color: #fff;
+    font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
+    font-size: 2.4rem;
+    line-height: 1;
+    border: 3px solid var(--vermilion-dark);
+    border-radius: 12px;
+    box-shadow:
+        0 4px 12px rgba(196, 61, 61, 0.3),
+        inset 0 1px 0 rgba(255,255,255,0.15),
+        inset 0 -2px 0 rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    animation: sealPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.title-seal .seal-char {
+    display: block;
+}
+
+.title-subtitle {
+    font-family: "Noto Serif SC", "STKaiti", "KaiTi", serif;
+    font-size: 0.95rem;
+    color: var(--ink-gray);
+    letter-spacing: 0.15em;
+}
+
+/* ── Tab 导航（古卷签条样式） ──────────────────────────── */
+.nav-tabs {
+    border-bottom: 2px solid var(--scroll-dark) !important;
+    gap: 4px;
+    padding: 0 4px;
+}
+
+.nav-tabs .nav-link {
+    font-family: "Noto Serif SC", serif;
+    font-size: 0.9rem;
+    color: var(--ink-gray) !important;
+    background: var(--scroll-dark) !important;
+    border: 1px solid var(--scroll-dark) !important;
+    border-bottom: none !important;
+    border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+    padding: 10px 18px;
+    position: relative;
+    transition: all var(--transition);
+    margin-bottom: -2px;
+}
+
+.nav-tabs .nav-link:hover {
+    color: var(--ink-black) !important;
+    background: #F0E8D5 !important;
+}
+
+.nav-tabs .nav-link.active {
+    color: #fff !important;
+    background: var(--vermilion) !important;
+    border-color: var(--vermilion) !important;
+    font-weight: 500;
+    /* 签条凸起效果 */
+    transform: translateY(-2px);
+    box-shadow: 0 -2px 8px rgba(196, 61, 61, 0.2);
+}
+
+/* 墨迹滑动指示器 */
+.nav-tabs .nav-link::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: var(--vermilion);
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.nav-tabs .nav-link.active::after {
+    width: 100%;
+}
+
+/* ── 卡片（古卷信笺质感） ──────────────────────────────── */
+.card {
+    background: var(--scroll) !important;
+    border: 1px solid var(--scroll-dark) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-sm) !important;
+    /* 隐约红色竖线格纹 */
+    background-image:
+        repeating-linear-gradient(
+            90deg,
+            transparent,
+            transparent 39px,
+            rgba(196, 61, 61, 0.04) 39px,
+            rgba(196, 61, 61, 0.04) 40px
+        ) !important;
+}
+
+.card-body {
+    padding: 28px 24px !important;
+}
+
+/* ── 表单标签 ──────────────────────────────────────────── */
+.form-label {
+    font-family: "Noto Serif SC", serif;
+    font-size: 0.9rem;
+    color: var(--ink-gray);
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+/* ── 输入框（底部毛笔单线） ────────────────────────────── */
+.form-control {
+    font-family: "Noto Sans SC", sans-serif;
+    font-size: 1rem;
+    color: var(--ink-black) !important;
+    background: transparent !important;
+    border: none !important;
+    border-bottom: 2px solid var(--ink-light) !important;
+    border-radius: 0 !important;
+    padding: 8px 4px !important;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.form-control:focus {
+    border-bottom-color: var(--vermilion) !important;
+    box-shadow: 0 2px 8px rgba(196, 61, 61, 0.1) !important;
+    outline: none !important;
+}
+
+.form-control::placeholder {
+    color: var(--ink-light);
+    font-style: italic;
+}
+
+/* textarea */
+textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+    border: 1px solid var(--scroll-dark) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 12px !important;
+    background: rgba(255,255,255,0.3) !important;
+}
+
+textarea.form-control:focus {
+    border-color: var(--vermilion) !important;
+}
+
+/* ── Select 下拉 ───────────────────────────────────────── */
+.form-select {
+    font-family: "Noto Serif SC", serif;
+    color: var(--ink-black) !important;
+    background-color: var(--scroll) !important;
+    border: 1px solid var(--scroll-dark) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 8px 32px 8px 12px !important;
+    cursor: pointer;
+    transition: border-color var(--transition);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M6 8L1 3h10z' fill='%238B8178'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+.form-select:focus {
+    border-color: var(--vermilion) !important;
+    box-shadow: 0 0 0 2px rgba(196, 61, 61, 0.1) !important;
+}
+
+/* ── Range 滑块（朱砂轨道+金色手柄） ──────────────────── */
+.form-range {
+    height: 6px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--scroll-dark);
+    border-radius: 3px;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px solid var(--vermilion);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transition: transform 0.2s;
+}
+
+.form-range::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.form-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px solid var(--vermilion);
+    cursor: pointer;
+}
+
+/* ── 按钮体系 ──────────────────────────────────────────── */
+
+/* 主按钮：印章式 */
+.btn-primary {
+    font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive !important;
+    font-size: 1.2rem !important;
+    letter-spacing: 0.1em !important;
+    color: #fff !important;
+    background: var(--vermilion) !important;
+    border: 2px solid var(--vermilion-dark) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 10px 32px !important;
+    box-shadow:
+        0 3px 8px rgba(196, 61, 61, 0.35),
+        inset 0 1px 0 rgba(255,255,255,0.2) !important;
+    transition: all 0.2s ease !important;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary:hover {
+    background: var(--vermilion-dark) !important;
+    transform: scale(1.03);
+    box-shadow:
+        0 6px 16px rgba(196, 61, 61, 0.45),
+        inset 0 1px 0 rgba(255,255,255,0.15) !important;
+}
+
+.btn-primary:active {
+    transform: scale(0.97) !important;
+    box-shadow:
+        0 1px 4px rgba(196, 61, 61, 0.3),
+        inset 0 2px 4px rgba(0,0,0,0.15) !important;
+}
+
+/* 次要按钮 */
+.btn-outline-secondary {
+    font-family: "Noto Serif SC", serif !important;
+    color: var(--ink-black) !important;
+    background: transparent !important;
+    border: 1.5px solid var(--ink-light) !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 6px 16px !important;
+    transition: all var(--transition);
+}
+
+.btn-outline-secondary:hover {
+    color: var(--vermilion) !important;
+    border-color: var(--vermilion) !important;
+    background: rgba(196, 61, 61, 0.04) !important;
+}
+
+.btn-outline-primary {
+    font-family: "Noto Serif SC", serif !important;
+    color: var(--vermilion) !important;
+    background: transparent !important;
+    border: 1.5px solid var(--vermilion-light) !important;
+    border-radius: var(--radius-sm) !important;
+    transition: all var(--transition);
+}
+
+.btn-outline-primary:hover {
+    color: #fff !important;
+    background: var(--vermilion) !important;
+    border-color: var(--vermilion) !important;
+}
+
+.btn-outline-danger {
+    font-family: "Noto Serif SC", serif !important;
+    color: var(--vermilion) !important;
+    background: transparent !important;
+    border: 1.5px solid var(--vermilion-light) !important;
+    border-radius: var(--radius-sm) !important;
+    transition: all var(--transition);
+}
+
+.btn-outline-danger:hover {
+    color: #fff !important;
+    background: var(--vermilion) !important;
+    border-color: var(--vermilion) !important;
+}
+
+.btn-sm {
+    font-size: 0.85rem !important;
+    padding: 4px 12px !important;
+}
+
+/* ── 结果卡片 ──────────────────────────────────────────── */
+#result-card {
+    animation: scrollReveal 0.5s ease-out;
+}
+
+#result-card .card-body {
+    padding: 20px 24px 28px;
+}
+
+#result-card h5 {
+    font-family: "Noto Serif SC", serif;
+    color: var(--ink-black);
+    font-size: 1.1rem;
+}
+
+/* ── 卷轴诗词展示区 ────────────────────────────────────── */
+.poem-scroll {
+    position: relative;
+    background:
+        linear-gradient(180deg,
+            rgba(245,239,224,0.6) 0%,
+            rgba(251,247,237,0.9) 8%,
+            rgba(251,247,237,0.95) 50%,
+            rgba(251,247,237,0.9) 92%,
+            rgba(245,239,224,0.6) 100%);
+    border-left: 1px solid rgba(196,61,61,0.08);
+    border-right: 1px solid rgba(196,61,61,0.08);
+    border-radius: 6px;
+    padding: 24px 20px;
+    margin: 8px 0;
+    /* 背景隐约山水 */
+    background-image:
+        /* 远山剪影 */
+        radial-gradient(ellipse at 30% 80%, rgba(44,36,22,0.03) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 60%, rgba(44,36,22,0.02) 0%, transparent 50%),
+        linear-gradient(180deg,
+            rgba(245,239,224,0.6) 0%,
+            rgba(251,247,237,0.9) 8%,
+            rgba(251,247,237,0.95) 50%,
+            rgba(251,247,237,0.9) 92%,
+            rgba(245,239,224,0.6) 100%);
+}
+
+/* 卷轴杆 */
+.scroll-rod {
+    height: 8px;
+    background: linear-gradient(180deg,
+        #D4C5A9 0%,
+        #C9A96E 30%,
+        #E0D0A8 50%,
+        #C9A96E 70%,
+        #B89860 100%);
+    border-radius: 4px;
+    margin: 4px 0;
+    box-shadow:
+        0 1px 3px rgba(0,0,0,0.1),
+        inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.scroll-rod.top { margin-bottom: 0; }
+.scroll-rod.bottom { margin-top: 0; }
+
+/* 诗词文本 */
+.poem-display {
+    text-align: center;
+    font-family: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+    font-size: 1.5rem;
+    line-height: 2.2;
+    color: var(--ink-black);
+    min-height: 80px;
+    padding: 8px 0;
+}
+
+.poem-display .line {
+    display: block;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: poemLineReveal 0.5s ease-out forwards;
+    animation-delay: calc(var(--line-index, 0) * 0.15s);
+}
+
+/* ── 韵律星级 ──────────────────────────────────────────── */
+.rhyme-stars {
+    color: var(--gold);
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+#rhyme-info, #time-info {
+    font-family: "Noto Serif SC", serif;
+    font-size: 0.85rem;
+}
+
+#extra-info {
+    font-family: "Noto Sans SC", sans-serif;
+    font-size: 0.8rem;
+    color: var(--ink-gray);
+    padding-top: 8px;
+    border-top: 1px dashed var(--scroll-dark);
+}
+
+/* ── 历史列表项 ────────────────────────────────────────── */
+.history-item {
+    background: var(--scroll);
+    border: 1px solid var(--scroll-dark) !important;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+}
+
+.history-item:hover {
+    background: #FFF9F0;
+    border-color: var(--gold-light) !important;
+    box-shadow: var(--shadow-sm);
+}
+
+.history-preview {
+    font-family: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+    font-size: 1.05rem;
+    color: var(--ink-black);
+    line-height: 1.8;
+}
+
+/* ── 诗词浏览卡片 ──────────────────────────────────────── */
+.poem-card {
+    background: var(--scroll) !important;
+    border: 1px solid var(--scroll-dark) !important;
+    border-radius: var(--radius-md) !important;
+    transition: transform 0.3s ease-out, box-shadow 0.3s ease-out, border-color 0.3s;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.poem-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg) !important;
+    border-color: var(--gold-light) !important;
+}
+
+.poem-card:active { transform: translateY(-2px); }
+
+.poem-card .card-body {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.poem-card-author {
+    font-family: "Noto Serif SC", serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--vermilion);
+    margin-bottom: 2px;
+}
+
+.poem-card-rhythmic {
+    font-family: "Noto Sans SC", sans-serif;
+    font-size: 0.8rem;
+    color: var(--ink-gray);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.poem-card-text {
+    font-family: "Noto Serif SC", "STKaiti", "KaiTi", "楷体", serif;
+    font-size: 1.05rem;
+    color: var(--ink-black);
+    white-space: pre-line;
+    line-height: 2;
+    flex-grow: 1;
+}
+
+.poem-card .badge {
+    font-family: "Noto Sans SC", sans-serif;
+    font-weight: 400;
+}
+
+.badge.bg-primary { background-color: var(--vermilion) !important; }
+.badge.bg-secondary { background-color: var(--ink-gray) !important; }
+.badge.bg-info { background-color: var(--jade) !important; }
+
+/* ── 模态框（古书册） ──────────────────────────────────── */
+.modal-backdrop {
+    /* 确保遮罩层可点击关闭 */
+    cursor: pointer;
+}
+
+.modal-content {
+    background: var(--scroll) !important;
+    border: 2px solid var(--scroll-dark) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--scroll-dark) !important;
+    padding: 16px 20px !important;
+}
+
+.modal-header .btn-close {
+    /* 确保关闭按钮可见可点击 */
+    opacity: 0.6;
+    transition: opacity var(--transition);
+}
+
+.modal-header .btn-close:hover {
+    opacity: 1;
+}
+
+.modal-title {
+    font-family: "Noto Serif SC", serif;
+    color: var(--vermilion);
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 20px !important;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--scroll-dark) !important;
+    padding: 12px 20px !important;
+}
+
+#poem-modal-body.poem-display {
+    font-size: 1.3rem;
+    padding: 24px 16px;
+    margin: 0;
+}
+
+/* ── 上传区域 ──────────────────────────────────────────── */
+.upload-area {
+    cursor: pointer;
+    transition: all var(--transition);
+    background: rgba(255,255,255,0.25) !important;
+    border: 2px dashed var(--ink-light) !important;
+    border-radius: var(--radius-md) !important;
+}
+
+.upload-area:hover {
+    border-color: var(--vermilion) !important;
+    background: rgba(196, 61, 61, 0.03) !important;
+}
+
+.upload-area.dragover {
+    border-color: var(--vermilion) !important;
+    background: rgba(196, 61, 61, 0.06) !important;
+    border-style: solid !important;
+}
+
+/* ── Loading 动画区 ────────────────────────────────────── */
+#loading-spinner {
+    padding: 32px 0;
+}
+
+.ink-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.ink-brush {
+    width: 60px;
+    height: 4px;
+    background: var(--ink-black);
+    border-radius: 2px;
+    animation: brushSweep 1.2s ease-in-out infinite;
+    position: relative;
+}
+
+.ink-brush::after {
+    content: "";
+    position: absolute;
+    right: -8px;
+    top: -4px;
+    width: 12px;
+    height: 12px;
+    background: var(--ink-black);
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-30deg);
+}
+
+.ink-loading-text {
+    font-family: "Ma Shan Zheng", "ZCOOL KuaiLe", cursive;
+    font-size: 1.3rem;
+    color: var(--ink-gray);
+    animation: textFlicker 1.5s ease-in-out infinite;
+}
+
+/* ── 错误提示 ──────────────────────────────────────────── */
+.alert-danger {
+    font-family: "Noto Serif SC", serif;
+    background: #FFF5F5 !important;
+    border: 1px solid var(--vermilion-light) !important;
+    color: var(--vermilion-dark) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+.alert-success {
+    font-family: "Noto Serif SC", serif;
+    background: #F5FFFA !important;
+    border: 1px solid var(--jade-light) !important;
+    color: var(--jade) !important;
+    border-radius: var(--radius-sm) !important;
+}
+
+/* ── 空状态 ────────────────────────────────────────────── */
+#history-empty, #browse-empty {
+    font-family: "Noto Serif SC", serif;
+    color: var(--ink-gray);
+}
+
+/* ============================================================
+   动画关键帧
+   ============================================================ */
+
+@keyframes pageFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* 印章弹出 */
+@keyframes sealPop {
+    0%   { transform: scale(0.8); opacity: 0; }
+    60%  { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 卷轴展开 */
+@keyframes scrollReveal {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 诗句逐行浮现 */
+@keyframes poemLineReveal {
+    0%   { opacity: 0; transform: translateY(20px); color: var(--ink-light); }
+    100% { opacity: 1; transform: translateY(0); color: var(--ink-black); }
+}
+
+/* 毛笔挥毫 */
+@keyframes brushSweep {
+    0%   { transform: translateX(-20px); opacity: 0.3; }
+    50%  { transform: translateX(20px); opacity: 1; }
+    100% { transform: translateX(-20px); opacity: 0.3; }
+}
+
+/* Loading 文字闪烁 */
+@keyframes textFlicker {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+
+/* 墨点飞溅 */
+@keyframes inkSplash {
+    0%   { transform: scale(0) translate(0, 0); opacity: 1; }
+    100% { transform: scale(1) translate(var(--sx), var(--sy)); opacity: 0; }
+}
+
+/* 淡入上浮 */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   响应式
+   ============================================================ */
+
+@media (max-width: 768px) {
+    .nav-tabs .nav-link {
+        font-size: 0.78rem;
+        padding: 8px 10px;
+    }
+
+    .poem-display {
+        font-size: 1.2rem;
+        line-height: 2;
+        padding: 4px 0;
+    }
+
+    .poem-scroll {
+        padding: 16px 12px;
+    }
+
+    .scroll-rod {
+        height: 5px;
+    }
+
+    .title-seal {
+        width: 64px;
+        height: 64px;
+        font-size: 1.8rem;
+        border-radius: 8px;
+    }
+
+    .card-body {
+        padding: 18px 14px !important;
+    }
+
+    .btn-primary {
+        font-size: 1.05rem !important;
+        padding: 8px 24px !important;
+    }
+
+    .poem-card-text {
+        font-size: 0.95rem;
+    }
+
+    .history-preview {
+        font-size: 0.9rem;
+    }
+
+    .seal-mark {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+
+    .brand-text {
+        font-size: 0.95rem;
+    }
+
+    .site-header {
+        padding: 8px 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .title-seal {
+        width: 56px;
+        height: 56px;
+        font-size: 1.5rem;
+    }
+
+    .poem-display {
+        font-size: 1.05rem;
+    }
+
+    .nav-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    .nav-tabs .nav-link {
+        white-space: nowrap;
+        font-size: 0.75rem;
+        padding: 6px 8px;
+    }
+
+    .bg-mountains {
+        height: 20vh;
+    }
+
+    .bg-clouds {
+        width: 60%;
+        bottom: 5%;
+    }
+}
