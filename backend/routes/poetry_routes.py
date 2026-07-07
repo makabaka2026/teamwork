@@ -336,6 +336,115 @@ def _build_image_prompt(labels: list, description: str) -> str:
     return f"画面：{description}。关键词：{kw_str}。作诗一首。"
 
 
+# ─── 诗词库 ──────────────────────────────────────────
+
+# 宋词三百首 JSON 文件路径
+LIBRARY_FILE = (
+    Path(__file__).resolve().parent.parent.parent
+    / "training" / "宋词" / "宋词三百首.json"
+)
+
+_library_cache = None  # 内存缓存，只加载一次
+
+
+def _load_library() -> list:
+    """加载诗词库，带内存缓存"""
+    global _library_cache
+    if _library_cache is not None:
+        return _library_cache
+    try:
+        if LIBRARY_FILE.exists():
+            with open(LIBRARY_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            if isinstance(data, list):
+                # 为每首诗生成唯一 id
+                for i, poem in enumerate(data):
+                    poem["id"] = f"lib_{i}"
+                _library_cache = data
+                return data
+    except (json.JSONDecodeError, OSError):
+        pass
+    _library_cache = []
+    return []
+
+
+@api_bp.route("/library", methods=["GET"])
+def get_library():
+    """获取诗词库列表，支持分页和筛选"""
+    poems = _load_library()
+    total = len(poems)
+
+    # 筛选
+    author = request.args.get("author", "").strip()
+    rhythmic = request.args.get("rhythmic", "").strip()
+    search = request.args.get("search", "").strip()
+
+    if author:
+        poems = [p for p in poems if author in p.get("author", "")]
+    if rhythmic:
+        poems = [p for p in poems if rhythmic in p.get("rhythmic", "")]
+    if search:
+        poems = [
+            p for p in poems
+            if search in p.get("author", "")
+            or search in p.get("rhythmic", "")
+            or any(search in line for line in p.get("paragraphs", []))
+        ]
+
+    filtered_total = len(poems)
+
+    # 分页
+    try:
+        offset = max(0, int(request.args.get("offset", 0)))
+        limit = min(100, max(1, int(request.args.get("limit", 20))))
+    except (ValueError, TypeError):
+        offset = 0
+        limit = 20
+
+    page = poems[offset:offset + limit]
+
+    # 简化返回数据（去掉 tags 减少传输量）
+    items = [
+        {
+            "id": p["id"],
+            "author": p.get("author", "佚名"),
+            "rhythmic": p.get("rhythmic", ""),
+            "paragraphs": p.get("paragraphs", []),
+        }
+        for p in page
+    ]
+
+    return jsonify({
+        "success": True,
+        "total": total,
+        "filtered_total": filtered_total,
+        "offset": offset,
+        "limit": limit,
+        "has_more": offset + limit < filtered_total,
+        "items": items,
+    })
+
+
+@api_bp.route("/library/authors", methods=["GET"])
+def get_library_authors():
+    """获取诗词库中所有作者的列表（去重排序）"""
+    poems = _load_library()
+    authors = sorted(set(
+        p.get("author", "佚名") for p in poems if p.get("author")
+    ))
+    return jsonify({"success": True, "authors": authors})
+
+
+@api_bp.route("/library/rhythmics", methods=["GET"])
+def get_library_rhythmics():
+    """获取诗词库中所有词牌名的列表（去重排序）"""
+    poems = _load_library()
+    rhythmics = sorted(set(
+        p.get("rhythmic", "") for p in poems if p.get("rhythmic")
+    ))
+    return jsonify({"success": True, "rhythmics": rhythmics})
+
+
 # ─── 历史记录存储 ───────────────────────────────────────────
 
 HISTORY_DIR = Path(__file__).resolve().parent.parent / "data"

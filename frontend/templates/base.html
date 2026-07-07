@@ -4,38 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}诗词自动生成系统{% endblock %}</title>
+    <!-- Google Fonts: 中文书法 + 衬线 + 无衬线 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@400;600;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 自定义样式 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     {% block head %}{% endblock %}
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">📜 诗词自动生成系统</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="https://github.com/makabaka2026/teamwork" target="_blank">GitHub</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
+    <!-- 背景装饰层 -->
+    <div class="bg-decorations" aria-hidden="true">
+        <!-- 远山轮廓 -->
+        <svg class="bg-mountains" viewBox="0 0 1200 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0 250 Q100 180 200 200 Q280 170 380 190 Q460 140 560 180 Q640 160 720 185 Q800 150 900 175 Q980 155 1080 170 Q1140 160 1200 180 L1200 300 L0 300Z"
+                  fill="rgba(44,36,22,0.06)"/>
+            <path d="M0 270 Q150 220 280 240 Q400 200 520 225 Q620 195 740 220 Q840 200 960 215 Q1060 190 1200 210 L1200 300 L0 300Z"
+                  fill="rgba(44,36,22,0.04)"/>
+            <path d="M0 285 Q200 250 400 265 Q550 240 700 260 Q850 235 1000 255 Q1100 245 1200 255 L1200 300 L0 300Z"
+                  fill="rgba(44,36,22,0.03)"/>
+        </svg>
+        <!-- 云雾装饰 -->
+        <svg class="bg-clouds" viewBox="0 0 600 200" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <ellipse cx="500" cy="160" rx="120" ry="25" fill="rgba(245,239,224,0.5)"/>
+            <ellipse cx="520" cy="150" rx="90" ry="18" fill="rgba(245,239,224,0.4)"/>
+            <ellipse cx="480" cy="155" rx="70" ry="15" fill="rgba(245,239,224,0.35)"/>
+        </svg>
+    </div>
 
+    <!-- 顶部导航（极简） -->
+    <header class="site-header">
+        <div class="container">
+            <a href="/" class="header-brand">
+                <span class="seal-mark">詩</span>
+                <span class="brand-text">诗词生成系统</span>
+            </a>
+            <a href="https://github.com/makabaka2026/teamwork" target="_blank" class="header-link" title="GitHub">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            </a>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
     <main class="container my-4">
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="footer mt-auto py-3 bg-light">
-        <div class="container text-center text-muted">
-            <small>Python + Flask + PyTorch | 小学期项目 2026</small>
+    <!-- 模态框区域（必须在 main 外部，避免 z-index 被 stacking context 限制） -->
+    {% block modal %}{% endblock %}
+
+    <!-- 页脚 -->
+    <footer class="site-footer">
+        <div class="container text-center">
+            <small>Python + Flask + PyTorch · 小学期项目 2026</small>
         </div>
     </footer>
 
+    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 主逻辑 -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block scripts %}{% endblock %}
 </body>

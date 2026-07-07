@@ -1,12 +1,21 @@
 /* 诗词自动生成系统 - 前端交互 */
 
-let lastRequest = null; // 保存上一次请求参数用于重新生成
+let lastRequest = null;
+
+// ─── 风格切换 ──────────────────────────────────
+function onStyleChange() {
+    const style = document.getElementById("keyword-style").value;
+    document.getElementById("tang-lines-group").style.display = style === "tang" ? "" : "none";
+    document.getElementById("song-lines-group").style.display = style === "song" ? "" : "none";
+}
 
 // ─── 初始化 ────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
     setupUploadArea();
     checkHealth();
+    initParallax();
+    initScrollReveal();
 });
 
 // ─── 健康检查 ──────────────────────────────────────
@@ -27,10 +36,15 @@ async function generateKeyword() {
     const keyword = document.getElementById("keyword-input").value.trim();
     if (!keyword) return showError("请输入关键字");
 
+    const style = document.getElementById("keyword-style").value;
+    const numLines = style === "song"
+        ? parseInt(document.getElementById("song-lines").value)
+        : parseInt(document.getElementById("keyword-lines").value);
+
     const params = {
         keyword: keyword,
-        num_lines: parseInt(document.getElementById("keyword-lines").value),
-        style: document.getElementById("keyword-style").value,
+        num_lines: numLines,
+        style: style,
         temperature: parseFloat(document.getElementById("keyword-temp").value),
     };
 
@@ -135,16 +149,16 @@ function showResult(data) {
     const timeInfo = document.getElementById("time-info");
     const extraInfo = document.getElementById("extra-info");
 
-    // 渲染诗句
-    const lines = data.poem.map(line =>
-        `<span class="line">${escapeHtml(line)}</span>`
+    // 渲染诗句，每行带 index 用于逐行动画
+    const lines = data.poem.map((line, i) =>
+        `<span class="line" style="--line-index:${i}">${escapeHtml(line)}</span>`
     ).join("\n");
     display.innerHTML = lines;
 
     // 韵律评分
     const stars = "★".repeat(Math.round(data.rhyme_score * 5)) +
                   "☆".repeat(5 - Math.round(data.rhyme_score * 5));
-    rhymeInfo.innerHTML = `韵律评分: <span class="rhyme-stars">${stars}</span> (${data.rhyme_score})`;
+    rhymeInfo.innerHTML = `韵律评分: <span class="rhyme-stars">${stars}</span> (${data.rhyme_score.toFixed(1)})`;
 
     // 耗时
     timeInfo.textContent = `生成耗时: ${(data.generation_time_ms / 1000).toFixed(1)}s`;
@@ -165,6 +179,12 @@ function showResult(data) {
 
     card.style.display = "block";
     card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    // 在按钮上触发墨点粒子
+    const btn = document.activeElement && document.activeElement.classList.contains('btn-primary')
+        ? document.activeElement
+        : document.querySelector("button.btn-primary:not([disabled])");
+    if (btn) spawnInkParticles(btn);
 }
 
 // ─── 重新生成 ──────────────────────────────────────
@@ -246,19 +266,13 @@ function showLoading(show) {
     document.getElementById("loading-spinner").style.display = show ? "block" : "none";
     document.querySelectorAll("button.btn-primary").forEach(btn => {
         btn.disabled = show;
-        btn.innerHTML = show
-            ? '<span class="spinner-border spinner-border-sm me-1"></span>生成中...'
-            : btn.dataset.origText || btn.innerHTML;
-    });
-    if (!show) {
-        document.querySelectorAll("button.btn-primary").forEach(btn => {
-            if (btn.dataset.origText) btn.innerHTML = btn.dataset.origText;
-        });
-    } else {
-        document.querySelectorAll("button.btn-primary").forEach(btn => {
+        if (show) {
             btn.dataset.origText = btn.innerHTML;
-        });
-    }
+            btn.innerHTML = '挥毫中…';
+        } else {
+            btn.innerHTML = btn.dataset.origText || btn.innerHTML;
+        }
+    });
 }
 
 function showError(msg) {
@@ -300,51 +314,116 @@ let browseState = {
     loaded: false,
     currentFilter: "all",
     currentModalItem: null,
+    authors: [],      // 作者列表
+    rhythmics: [],    // 词牌名列表
 };
 
 const HISTORY_PAGE_SIZE = 20;
+const LIBRARY_PAGE_SIZE = 24;
 
 // ─── 加载 ──────────────────────────────────────────
 
 async function loadHistoryIfNeeded() {
     if (!historyState.loaded) {
-        await fetchHistory("history");
+        await fetchHistory();
     }
 }
 
 async function loadBrowseIfNeeded() {
     if (!browseState.loaded) {
-        await fetchHistory("browse");
+        // 并行加载诗词库和筛选列表
+        await Promise.all([
+            fetchLibrary(),
+            fetchLibraryFilters()
+        ]);
     }
 }
 
-async function fetchHistory(mode) {
-    const state = mode === "history" ? historyState : browseState;
+async function fetchHistory() {
     try {
-        const resp = await fetch(`/api/history?offset=${state.offset}&limit=${HISTORY_PAGE_SIZE}`);
+        const resp = await fetch(`/api/history?offset=${historyState.offset}&limit=${HISTORY_PAGE_SIZE}`);
         const data = await resp.json();
         if (data.success) {
-            state.data = state.data.concat(data.items);
-            state.hasMore = data.has_more;
-            state.offset += data.items.length;
-            state.loaded = true;
-            if (mode === "history") {
-                renderHistoryList();
-            } else {
-                renderBrowseCards();
-            }
+            historyState.data = historyState.data.concat(data.items);
+            historyState.hasMore = data.has_more;
+            historyState.offset += data.items.length;
+            historyState.loaded = true;
+            renderHistoryList();
         }
     } catch (e) {
         showError("加载历史失败: " + e.message);
     }
 }
 
+async function fetchLibrary(reset = false) {
+    if (reset) {
+        browseState.offset = 0;
+        browseState.data = [];
+    }
+    const filter = browseState.currentFilter;
+    let url = `/api/library?offset=${browseState.offset}&limit=${LIBRARY_PAGE_SIZE}`;
+    if (filter === "all") {
+        // 无筛选
+    } else if (filter.startsWith("author:")) {
+        url += `&author=${encodeURIComponent(filter.replace("author:", ""))}`;
+    } else if (filter.startsWith("rhythmic:")) {
+        url += `&rhythmic=${encodeURIComponent(filter.replace("rhythmic:", ""))}`;
+    }
+
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        if (data.success) {
+            browseState.data = browseState.data.concat(data.items);
+            browseState.hasMore = data.has_more;
+            browseState.offset += data.items.length;
+            browseState.loaded = true;
+            renderBrowseCards();
+        }
+    } catch (e) {
+        showError("加载诗词库失败: " + e.message);
+    }
+}
+
+async function fetchLibraryFilters() {
+    try {
+        const [authorsRes, rhythmicsRes] = await Promise.all([
+            fetch("/api/library/authors"),
+            fetch("/api/library/rhythmics"),
+        ]);
+        const authorsData = await authorsRes.json();
+        const rhythmicsData = await rhythmicsRes.json();
+        if (authorsData.success) browseState.authors = authorsData.authors;
+        if (rhythmicsData.success) browseState.rhythmics = rhythmicsData.rhythmics;
+        renderBrowseFilter();
+    } catch (e) {
+        console.warn("加载筛选列表失败:", e);
+    }
+}
+
+function renderBrowseFilter() {
+    const select = document.getElementById("browse-filter");
+    if (!select) return;
+    let html = '<option value="all">全部诗词</option>';
+    html += '<optgroup label="── 按作者 ──">';
+    browseState.authors.forEach(a => {
+        html += `<option value="author:${a}">${a}</option>`;
+    });
+    html += '</optgroup>';
+    html += '<optgroup label="── 按词牌 ──">';
+    browseState.rhythmics.forEach(r => {
+        html += `<option value="rhythmic:${r}">${r}</option>`;
+    });
+    html += '</optgroup>';
+    select.innerHTML = html;
+}
+
 function loadMoreHistory() {
-    fetchHistory("history");
+    fetchHistory();
 }
 
 function loadMoreBrowse() {
-    fetchHistory("browse");
+    fetchLibrary();
 }
 
 // ─── 筛选 ──────────────────────────────────────────
@@ -356,7 +435,12 @@ function applyHistoryFilter() {
 
 function applyBrowseFilter() {
     browseState.currentFilter = document.getElementById("browse-filter").value;
+    // 重置分页，重新加载
+    browseState.offset = 0;
+    browseState.data = [];
+    browseState.hasMore = false;
     renderBrowseCards();
+    fetchLibrary(true);
 }
 
 function filterItems(items, filterType) {
@@ -420,30 +504,26 @@ function renderBrowseCards() {
     const empty = document.getElementById("browse-empty");
     const loadMore = document.getElementById("browse-load-more");
 
-    const filtered = filterItems(browseState.data, browseState.currentFilter);
+    const items = browseState.data;
 
-    if (browseState.data.length === 0) {
+    if (items.length === 0 && browseState.loaded) {
         container.innerHTML = "";
         empty.style.display = "block";
         loadMore.style.display = "none";
         return;
     }
 
-    empty.style.display = filtered.length === 0 ? "block" : "none";
+    empty.style.display = "none";
 
-    const typeLabels = { keyword: "🔑 关键字", scene: "📝 场景", image: "🖼️ 图片" };
-
-    container.innerHTML = filtered.map(item => `
-        <div class="col-lg-4 col-md-6">
+    container.innerHTML = items.map(item => `
+        <div class="col-lg-3 col-md-4 col-sm-6">
             <div class="card poem-card h-100" onclick="showPoemModal('${item.id}')" style="cursor:pointer;">
                 <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <span class="badge bg-primary">${typeLabels[item.type] || item.type}</span>
-                        <span class="rhyme-stars small">${starRating(item.rhyme_score)}</span>
-                    </div>
-                    <p class="card-text poem-card-text flex-grow-1">${escapeHtml(item.poem.slice(0, 2).join("\n"))}</p>
+                    <h6 class="poem-card-author">${escapeHtml(item.author)}</h6>
+                    ${item.rhythmic ? `<span class="poem-card-rhythmic">【${escapeHtml(item.rhythmic)}】</span>` : ""}
+                    <p class="card-text poem-card-text flex-grow-1">${escapeHtml(item.paragraphs.slice(0, 2).join("\n"))}</p>
                     <div class="text-muted small mt-2">
-                        <span>${escapeHtml(item.input.substring(0, 15))}${item.input.length > 15 ? "…" : ""}</span>
+                        <span>共 ${item.paragraphs.length} 句</span>
                     </div>
                 </div>
             </div>
@@ -455,24 +535,66 @@ function renderBrowseCards() {
 
 // ─── 模态框 ────────────────────────────────────────
 
+let poemModalInstance = null;
+
+function closePoemModal() {
+    if (poemModalInstance) {
+        poemModalInstance.hide();
+        // dispose 延迟到 hidden 事件后
+    }
+}
+
 function showPoemModal(id) {
     const item = browseState.data.find(r => r.id === id);
     if (!item) return;
     browseState.currentModalItem = item;
 
-    document.getElementById("poem-modal-title").textContent =
-        `${item.type === "keyword" ? "🔑" : item.type === "scene" ? "📝" : "🖼️"} ${item.input.substring(0, 20)}`;
-    document.getElementById("poem-modal-body").innerHTML =
-        item.poem.map(line => `<span class="line">${escapeHtml(line)}</span>`).join("\n");
-    document.getElementById("poem-modal-meta").innerHTML =
-        `生成时间: ${item.timestamp} | 模型: ${item.model} | 韵律评分: ${starRating(item.rhyme_score)} (${item.rhyme_score}) | 耗时: ${(item.generation_time_ms / 1000).toFixed(1)}s`;
+    const isLibrary = item.author && item.paragraphs;
 
-    new bootstrap.Modal(document.getElementById("poem-modal")).show();
+    if (isLibrary) {
+        document.getElementById("poem-modal-title").textContent =
+            `${item.author} · ${item.rhythmic || "无题"}`;
+        document.getElementById("poem-modal-body").innerHTML =
+            item.paragraphs.map((line, i) => `<span class="line" style="--line-index:${i}">${escapeHtml(line)}</span>`).join("\n");
+        document.getElementById("poem-modal-meta").innerHTML =
+            `作者: ${item.author} | 词牌: ${item.rhythmic || "—"} | 共 ${item.paragraphs.length} 句`;
+    } else {
+        document.getElementById("poem-modal-title").textContent =
+            `${item.type === "keyword" ? "🔑" : item.type === "scene" ? "📝" : "🖼️"} ${(item.input || "").substring(0, 20)}`;
+        document.getElementById("poem-modal-body").innerHTML =
+            (item.poem || []).map((line, i) => `<span class="line" style="--line-index:${i}">${escapeHtml(line)}</span>`).join("\n");
+        document.getElementById("poem-modal-meta").innerHTML =
+            `生成时间: ${item.timestamp || "—"} | 模型: ${item.model || "—"} | 韵律评分: ${starRating(item.rhyme_score || 0)} (${(item.rhyme_score || 0).toFixed(1)})`;
+    }
+
+    // 先关闭旧实例
+    if (poemModalInstance) {
+        poemModalInstance.hide();
+        poemModalInstance.dispose();
+        poemModalInstance = null;
+    }
+
+    const modalEl = document.getElementById("poem-modal");
+    poemModalInstance = new bootstrap.Modal(modalEl, {
+        backdrop: true,
+        keyboard: true,
+        focus: true
+    });
+    poemModalInstance.show();
+
+    // 监听关闭事件，清理实例
+    modalEl.addEventListener("hidden.bs.modal", () => {
+        if (poemModalInstance) {
+            poemModalInstance.dispose();
+            poemModalInstance = null;
+        }
+    }, { once: true });
 }
 
 function copyModalPoem() {
     if (!browseState.currentModalItem) return;
-    const text = browseState.currentModalItem.poem.join("\n");
+    const item = browseState.currentModalItem;
+    const text = (item.paragraphs || item.poem || []).join("\n");
     navigator.clipboard.writeText(text).then(() => {
         showError("✅ 已复制到剪贴板");
     });
@@ -506,5 +628,91 @@ async function deleteHistoryItem(id) {
         }
     } catch (e) {
         showError("删除失败: " + e.message);
+    }
+}
+
+// ─── 墨点飞溅粒子效果 ──────────────────────────────────
+
+function spawnInkParticles(button) {
+    const rect = button.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const count = 14;
+
+    for (let i = 0; i < count; i++) {
+        const particle = document.createElement("span");
+        const angle = (Math.PI * 2 * i) / count;
+        const distance = 30 + Math.random() * 40;
+        const sx = Math.cos(angle) * distance;
+        const sy = Math.sin(angle) * distance;
+        const size = 3 + Math.random() * 6;
+
+        Object.assign(particle.style, {
+            position: "fixed",
+            left: cx + "px",
+            top: cy + "px",
+            width: size + "px",
+            height: size + "px",
+            background: `rgba(${Math.random() > 0.5 ? "44,36,22" : "196,61,61"}, ${0.5 + Math.random() * 0.5})`,
+            borderRadius: "50%",
+            pointerEvents: "none",
+            zIndex: "9999",
+            transition: "all 0.6s ease-out",
+        });
+
+        document.body.appendChild(particle);
+
+        requestAnimationFrame(() => {
+            particle.style.transform = `translate(${sx}px, ${sy}px) scale(0)`;
+            particle.style.opacity = "0";
+        });
+
+        setTimeout(() => particle.remove(), 700);
+    }
+}
+
+// ─── 背景视差效果 ──────────────────────────────────────
+
+function initParallax() {
+    const mountains = document.querySelector(".bg-mountains");
+    const clouds = document.querySelector(".bg-clouds");
+    if (!mountains && !clouds) return;
+
+    document.addEventListener("mousemove", (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 2;  // -1 ~ 1
+        const y = (e.clientY / window.innerHeight - 0.5) * 2;
+
+        if (mountains) {
+            mountains.style.transform = `translate(${x * 8}px, ${y * 4}px)`;
+        }
+        if (clouds) {
+            clouds.style.transform = `translate(${x * -12}px, ${y * -6}px)`;
+        }
+    });
+}
+
+// ─── 滚动入场动画 ──────────────────────────────────────
+
+function initScrollReveal() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.animation = "fadeInUp 0.5s ease-out forwards";
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.1, rootMargin: "0px 0px -30px 0px" });
+
+    // 观察浏览卡片的容器
+    const browseContainer = document.getElementById("browse-cards");
+    if (browseContainer) {
+        // MutationObserver 监听卡片渲染
+        const mo = new MutationObserver(() => {
+            browseContainer.querySelectorAll(".col-lg-4").forEach(col => {
+                col.style.opacity = "0";
+                observer.observe(col);
+            });
+        });
+        mo.observe(browseContainer, { childList: true });
     }
 }
