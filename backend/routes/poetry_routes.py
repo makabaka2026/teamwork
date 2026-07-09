@@ -33,7 +33,7 @@ def _get_generator() -> PoetryGenerator:
     global _generator
     if _generator is None:
         _generator = PoetryGenerator()
-        _generator.load_model("gpt2")
+        _generator.load_model("bart")
     return _generator
 
 
@@ -92,7 +92,7 @@ def generate_keyword():
 
     num_lines = int(data.get("num_lines", 4))
     temperature = float(data.get("temperature", 0.7))
-    model_type = data.get("model_type", "gpt2")
+    model_type = data.get("model_type", "bart")
 
     try:
         start = time.time()

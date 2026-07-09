@@ -246,29 +246,36 @@ def main():
                 fmt = poem.get("format", "")
                 tag = ""  # 五言/七言分开训练, 不需要格式标签
 
-                # === 模式1: 场景描述 → 全诗 (指令格式) ===
+                # === 全部使用指令格式，不做首联续写 ===
+                # 原因: 首联→全诗会教模型"输入即输出开头"，导致关键词泄露
+
+                # 模式1: 场景描述 → 全诗
                 scene = generate_scene_description(poem)
-                # 指令格式: "写诗：xxx" — 教会模型输入≠诗句
                 f.write(json.dumps({"input": f"写诗：{scene}", "output": poem_text},
                                    ensure_ascii=False) + "\n")
                 pairs += 1
 
-                # === 模式2: 标题 → 全诗 (指令格式) ===
+                # 模式2: 标题 → 全诗
                 title = poem.get("title", "").strip()
                 clean_title = re.sub(r"[（(].*?[）)]", "", title).strip()
                 if clean_title and clean_title not in BAD_TITLES and len(clean_title) >= 2:
-                    f.write(json.dumps({"input": f"写诗：{clean_title}",
+                    f.write(json.dumps({"input": f"写诗：以{clean_title}为题",
                                         "output": poem_text}, ensure_ascii=False) + "\n")
                     pairs += 1
 
-                # === 模式3: 首联 → 全诗 ===
-                segments = re.split(r"[，。！？、；：\n]+", poem_text)
-                segments = [s for s in segments if len(re.findall(r"[一-鿿]", s)) >= 3]
-                if len(segments) >= 2:
-                    couplet = segments[0] + "，" + segments[1] + "。"
-                    f.write(json.dumps({"input": f"续诗：{couplet}",
-                                        "output": poem_text}, ensure_ascii=False) + "\n")
-                    pairs += 1
+                # 模式3: 多样化指令模板
+                kws = poem.get("keywords", [])[:2]
+                if kws:
+                    kw = kws[0]
+                    templates = [
+                        f"写诗：描写{kw}的意境。",
+                        f"写诗：以{kw}为主题。",
+                        f"写诗：围绕{kw}创作。",
+                    ]
+                    for tpl in templates[:2]:
+                        f.write(json.dumps({"input": tpl, "output": poem_text},
+                                           ensure_ascii=False) + "\n")
+                        pairs += 1
 
         print(f"  {out_name}: {pairs} 对 ({len(poems)}首, 跳过短诗:{skipped_short})")
 
