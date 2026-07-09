@@ -18,7 +18,7 @@ def load_model(path):
 
 # 尝试加载分开训练的模型，失败则用通用模型
 MODELS = {}
-for style, dirname in [("wuyan","bart-wuyan"), ("qiyan","bart-qiyan"), ("song","bart-song")]:
+for style, dirname in [("wuyan","bart-wuyan"), ("qiyan","bart-qiyan"), ("song","bart-song"), ("tang","bart-tang")]:
     try:
         t, m = load_model(f"models/{dirname}")
         MODELS[style] = (t, m)
@@ -31,7 +31,7 @@ if not MODELS:
     exit(1)
 
 # 默认使用第一个可用模型
-DEFAULT_STYLE = list(MODELS.keys())[0]
+DEFAULT_STYLE = "tang" if "tang" in MODELS else list(MODELS.keys())[0]
 tokenizer, model = MODELS[DEFAULT_STYLE]
 
 # 扩写索引

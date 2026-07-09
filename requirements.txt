@@ -41,8 +41,8 @@ safetensors==0.8.0
 snownlp==0.12.3
 sympy==1.14.0
 tokenizers==0.22.2
-torch==2.12.1+cpu
-torchvision==0.27.1+cpu
+torch>=2.6.0
+torchvision>=0.21.0
 tqdm==4.68.3
 transformers==5.12.1
 typing_extensions==4.16.0

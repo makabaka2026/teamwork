@@ -1,40 +1,48 @@
-"""诗词格式化 — 清理生成文本，按行分割，繁简转换"""
+"""诗词格式化 — 清理、按标点分行、繁简转换"""
 import re
 import zhconv
 
 
 class PoetryFormatter:
-    PUNCTUATION = set("，。！？；、：""''（）《》【】…—·")
 
     def format(self, raw_text: str, num_lines: int = 4) -> list[str]:
-        # 去除特殊 token
+        """格式化生成文本为诗词行"""
         text = self._clean(raw_text)
-        # 繁体转简体
         text = zhconv.convert(text, "zh-cn")
-        # 按标点分割
-        lines = self._split_lines(text)
-        # 清理每行
-        cleaned = []
-        for line in lines:
-            line = line.strip()
-            if not line:
-                continue
-            if line[-1] not in self.PUNCTUATION:
-                line += "，"
-            cleaned.append(line)
-
-        return cleaned[:num_lines]
+        return self._split_lines(text, num_lines)
 
     def _clean(self, text: str) -> str:
         text = re.sub(r"\[.*?\]", "", text)
         text = re.sub(r"\s+", "", text)
-        text = re.sub(r"[^一-鿿　-〿＀-￯]", "", text)
         return text
 
-    def _split_lines(self, text: str) -> list[str]:
-        text = re.sub(r"([。！？；])", r"\1\n", text)
-        text = re.sub(r"((?:[^，。]*?，){2})", r"\1\n", text)
-        return [l for l in text.split("\n") if l.strip()]
+    def _split_lines(self, text: str, num_lines: int = 4) -> list[str]:
+        """按标点自然分行：每个，。！？处断句"""
+        result = []
+        buf = ""
+        for ch in text:
+            buf += ch
+            if ch in "。！？；，、":
+                line = buf.strip()
+                if len(line) >= 2:
+                    result.append(line)
+                buf = ""
+
+        # 剩余内容
+        if buf.strip() and len(buf.strip()) >= 2:
+            result.append(buf.strip() + "。")
+
+        # 如果标点分出的行不够（模型没生成足够标点）
+        if len(result) < 2 and len(text) >= 8:
+            chunk = 7 if len(text) >= 28 else 5
+            result = []
+            for i in range(0, len(text), chunk):
+                seg = text[i:i+chunk]
+                if len(seg) >= 3:
+                    punct = "。" if (len(result) + 1) % 2 == 0 else "，"
+                    result.append(seg + punct)
+
+        return result[:num_lines]
 
     def to_vertical(self, lines: list[str]) -> str:
         html = '<div class="poem-vertical">'
